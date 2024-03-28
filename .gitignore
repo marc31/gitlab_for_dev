@@ -1,0 +1,5 @@
+config-gitlab/
+config-runner/
+data-gitlab/
+logs/
+ssl/

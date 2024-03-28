@@ -1,0 +1,52 @@
+version: '3.6'
+
+services:
+
+  gitlab:
+    image: gitlab/gitlab-ce:16.10.1-ce.0
+    container_name: gitlab
+    # restart: always
+    hostname: 'gitlab.loc'
+    environment:
+      # Use external file is better because you can update config
+      # without restarting all the docker with
+      # $ docker compose exec -it gitlab gitlab-ctl reconfigure
+      GITLAB_OMNIBUS_CONFIG: "from_file('/omnibus_config.rb')"
+    configs:
+      - source: omnibus
+        target: /omnibus_config.rb
+    env_file:
+      - .env
+    ports:
+      # this is not an error because when we specified an external_url 
+      # into omnibus_config.rb, nginx will listen on this port
+      - '${HTTPS_PORT}:${HTTPS_PORT}'
+      # same here
+      - '${HTTPS_PORT_REGISTRY}:${HTTPS_PORT_REGISTRY}'
+      - '${SSH_PORT}:22'
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config-gitlab:/etc/gitlab
+      - ./data-gitlab:/var/opt/gitlab
+      - ./logs:/var/log/gitlab
+      # You need to generate your self-signed certificates and bind it here
+      - ./ssl/gitlab.loc.crt:/etc/gitlab/ssl/gitlab.loc.crt
+      - ./ssl/gitlab.loc.key:/etc/gitlab/ssl/gitlab.loc.key
+    shm_size: '256m'
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine3.19
+    restart: unless-stopped
+    # security_opt:
+    #   - no-new-privileges:true
+    depends_on:
+      - gitlab
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config-runner:/etc/gitlab-runner
+
+configs:
+  omnibus:
+    file: ./omnibus_config.rb

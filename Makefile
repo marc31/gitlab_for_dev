@@ -25,4 +25,7 @@ config-reload:
 config-show:
 	docker compose exec -it gitlab gitlab-ctl show-config
 
-PHONY: up down restart stop logs get-root-password shell config-reload config-show
+runner-register:
+	docker compose exec -it gitlab-runner gitlab-runner register
+
+.PHONY: up down restart stop logs get-root-password shell config-reload config-show
